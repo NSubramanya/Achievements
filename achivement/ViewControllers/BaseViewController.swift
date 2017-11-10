@@ -40,24 +40,9 @@ class BaseViewController: UIViewController {
         switch type {
         case .group:
             DispatchQueue.global(qos: .userInitiated).async {
-                self.baseController.getGroups(success: { (groups) in
-                    self.groups = groups
-                    DispatchQueue.main.async {
-                        MBProgressHUD.hide(for: self.view, animated: true)
-                        self.tableView.isUserInteractionEnabled = true
-                        self.tableView.reloadData()
-                    }
-                }, failure: { (error) in
-                    MBProgressHUD.hide(for: self.view, animated: true)
-                    self.tableView.isUserInteractionEnabled = true
-                    self.alert(with: error)
-                })
-            }
-        case .category:
-            DispatchQueue.global(qos: .userInitiated).async {
-                self.baseController.getCategories(from: self.ids, completion: { (categories, error) in
+                self.baseController.getGroups(completion: { (groups, error) in
                     if error == nil {
-                        self.categories = categories! as! [Category]
+                        self.groups = groups! as! [Group]
                         DispatchQueue.main.async {
                             MBProgressHUD.hide(for: self.view, animated: true)
                             self.tableView.isUserInteractionEnabled = true
@@ -66,6 +51,21 @@ class BaseViewController: UIViewController {
                     } else {
                         MBProgressHUD.hide(for: self.view, animated: true)
                         self.tableView.isUserInteractionEnabled = true
+                        self.alert(with: error!)
+                    }
+                })
+            }
+        case .category:
+            DispatchQueue.global(qos: .userInitiated).async {
+                self.baseController.getCategories(from: self.ids, completion: { (categories, error) in
+                    if error == nil {
+                        self.categories = categories! as! [Category]
+                        DispatchQueue.main.async {
+                            self.removeHUD()
+                            self.tableView.reloadData()
+                        }
+                    } else {
+                        self.removeHUD()
                         self.alert(with: error!)
                     }
                 })
@@ -76,13 +76,11 @@ class BaseViewController: UIViewController {
                     if error == nil {
                         self.achievements = achievements! as! [Achievement]
                         DispatchQueue.main.async {
-                            MBProgressHUD.hide(for: self.view, animated: true)
-                            self.tableView.isUserInteractionEnabled = true
+                            self.removeHUD()
                             self.tableView.reloadData()
                         }
                     } else {
-                        MBProgressHUD.hide(for: self.view, animated: true)
-                        self.tableView.isUserInteractionEnabled = true
+                        self.removeHUD()
                         self.alert(with: error!)
                     }
                 })
@@ -90,8 +88,23 @@ class BaseViewController: UIViewController {
         }
     }
 
+    func removeHUD() {
+        MBProgressHUD.hide(for: self.view, animated: true)
+        self.tableView.isUserInteractionEnabled = true
+    }
+
     func alert(with message: String) {
-        
+        let alert = UIAlertController(title: message, message: "Press OK to try Again", preferredStyle: .alert)
+        let okAction = UIAlertAction(title: "OK", style: .default) { (_) in
+            self.loadData()
+            self.dismiss(animated: true, completion: nil)
+        }
+        let cancelAction = UIAlertAction(title: "Cancel", style: .default) { (_) in
+            self.dismiss(animated: true, completion: nil)
+        }
+        alert.addAction(cancelAction)
+        alert.addAction(okAction)
+        self.present(alert, animated: true, completion: nil)
     }
 }
 

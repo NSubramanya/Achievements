@@ -14,128 +14,112 @@ class BaseController {
 
     var groupIds: [String] = []
 
-    func getGroups(success: @escaping ([Group])->(), failure: @escaping (String)->()) {
+    func getGroups(completion: @escaping(_ groups: [Group?]?, _ error: String?)-> Void) {
         let allGroupReq = AllGroupRequest()
         allGroupReq.retriveAllGroupIds { (groupIdsArray, error) in
             if error == nil {
                 self.groupIds = groupIdsArray!
                 self.retrieveGroupInfo { (groups, error) in
                     if error == nil {
-                        success(groups! as! [Group])
+                        completion(groups!, nil)
                     } else {
-                        failure(WebResponseError.description(for: error!))
+                        completion(nil, error)
                     }
                 }
             } else {
-                failure(WebResponseError.description(for: error!))
-            }
-        }
-    }
-
-    func retrieveGroupInfo(completion: @escaping(_ groups: [Group?]?, _ error: WebResponseError?)-> Void) {
-        
-        var groups: [Group] = []
-        var didSucceed = false
-        let groupFetcherRequest = GroupRequest(with: groupIds)
-        let webserviceManager = WebServiceManager()
-        webserviceManager.getResponse(for: groupFetcherRequest) { (request, response, data, error) in
-            let error = WebResponseError.check(response: response, request: request, error: error)
-            if error != nil {
-                completion(nil, error)
-            }
-            else{
-                guard let data = data else {
-                    completion(nil, WebResponseError.invalidRequest)
-                    return
-                }
-                let json = JSON(data: data)
-                guard let groupJsonArray = json[].array else {
-                    completion(nil, WebResponseError.invalidRequest)
-                    return
-                }
-                for groupJson in groupJsonArray {
-                    if let group = Group.init(from: groupJson) {
-                        groups.append(group)
-                        didSucceed = true
-                    } else {
-                        completion(nil, WebResponseError.invalidRequest)
-                    }
-                }
-            }
-            if didSucceed {
-                completion(groups, nil)
-            }
-        }
-    }
-
-    func getCategories(from ids: [String], completion: @escaping(_ categoris: [Category?]?, _ error: String?)-> Void) {
-        var categories: [Category] = []
-        var didSucceed = false
-        let categoryFetcherRequest = CategoryRequest(with: ids)
-        let webserviceManager = WebServiceManager()
-
-        webserviceManager.getResponse(for: categoryFetcherRequest) { (request, response, data, error) in
-            let error = WebResponseError.check(response: response, request: request, error: error)
-            if error != nil {
                 completion(nil, WebResponseError.description(for: error!))
             }
-            else{
-                guard let data = data else {
-                    completion(nil, WebResponseError.description(for: WebResponseError.invalidRequest))
-                    return
-                }
-                let json = JSON(data: data)
-                guard let categoryJsonArray = json[].array else {
-                    completion(nil, WebResponseError.description(for: WebResponseError.invalidRequest))
-                    return
-                }
-                for categoryJson in categoryJsonArray {
-                    if let category = Category.init(from: categoryJson) {
-                        categories.append(category)
-                        didSucceed = true
-                    } else {
-                        completion(nil, WebResponseError.description(for: WebResponseError.invalidRequest))
-                    }
-                }
+        }
+    }
+
+    func retrieveGroupInfo(completion: @escaping(_ groups: [Group?]?, _ error: String?)-> Void) {
+        let groupFetcherRequest = GroupRequest(with: groupIds)
+        self.perfom(request: groupFetcherRequest, type: .group) { (achievements, categories, groups, error) in
+            if error == nil {
+                completion(groups, nil)
+            } else {
+                completion(nil, error)
             }
-            if didSucceed {
+        }
+    }
+
+    func getCategories(from ids: [String], completion: @escaping(_ categoris: [Category?]?, _ error: String?)-> Void) {        let categoryFetcherRequest = CategoryRequest(with: ids)
+        self.perfom(request: categoryFetcherRequest, type: .category) { (achievements, categories, groups, error) in
+            if error == nil {
                 completion(categories, nil)
+            } else {
+                completion(nil, error)
             }
         }
     }
 
     func getAchievements(from ids: [String], completion: @escaping(_ achievements: [Achievement?]?, _ error: String?)-> Void) {
-        var achievements: [Achievement] = []
-        var didSucceed = false
         let achievementFetcherRequest = AchivementRequest(with: ids)
-        let webserviceManager = WebServiceManager()
+        self.perfom(request: achievementFetcherRequest, type: .achievement) { (achievements, categories, groups, error) in
+            if error == nil {
+                completion(achievements, nil)
+            } else {
+                completion(nil, error)
+            }
+        }
         
-        webserviceManager.getResponse(for: achievementFetcherRequest) { (request, response, data, error) in
+    }
+
+    func perfom(request: ModifiableBaseRequest, type: Type, completion: @escaping(_ achievements: [Achievement?]?,_ categories: [Category?]?, _ groups: [Group?]?, _ error: String?)-> Void) {
+        let webserviceManager = WebServiceManager()
+        var achievements: [Achievement] = []
+        var categories: [Category] = []
+        var groups: [Group] = []
+        var didSucceed = false
+        
+        webserviceManager.getResponse(for: request) { (request, response, data, error) in
             let error = WebResponseError.check(response: response, request: request, error: error)
             if error != nil {
-                completion(nil, WebResponseError.description(for: error!))
+                completion(nil, nil, nil, WebResponseError.description(for: error!))
             }
             else{
                 guard let data = data else {
-                    completion(nil, WebResponseError.description(for: WebResponseError.invalidRequest))
+                    completion(nil, nil, nil, WebResponseError.description(for: WebResponseError.invalidRequest))
                     return
                 }
                 let json = JSON(data: data)
-                guard let achievementJsonArray = json[].array else {
-                    completion(nil, WebResponseError.description(for: WebResponseError.invalidRequest))
+                guard let jsonArray = json[].array else {
+                    completion(nil, nil, nil, WebResponseError.description(for: WebResponseError.invalidRequest))
                     return
                 }
-                for achievementJson in achievementJsonArray {
-                    if let achievement = Achievement.init(from: achievementJson) {
-                        achievements.append(achievement)
-                        didSucceed = true
-                    } else {
-                        completion(nil, WebResponseError.description(for: WebResponseError.invalidRequest))
+                for json in jsonArray {
+                    if type == .achievement {
+                        if let achievement = Achievement.init(from: json) {
+                            achievements.append(achievement)
+                            didSucceed = true
+                        } else {
+                            completion(nil, nil, nil, WebResponseError.description(for: WebResponseError.invalidRequest))
+                        }
+                    } else if type == .category {
+                        if let category = Category.init(from: json) {
+                            categories.append(category)
+                            didSucceed = true
+                        } else {
+                            completion(nil, nil, nil, WebResponseError.description(for: WebResponseError.invalidRequest))
+                        }
+                    } else if type == .group {
+                        if let group = Group.init(from: json) {
+                            groups.append(group)
+                            didSucceed = true
+                        } else {
+                            completion(nil, nil, nil, WebResponseError.description(for: WebResponseError.invalidRequest))
+                        }
                     }
                 }
             }
             if didSucceed {
-                completion(achievements, nil)
+                if type == .group {
+                    completion(nil, nil, groups, nil)
+                } else if type == .category {
+                    completion(nil, categories, nil, nil)
+                } else if type == .achievement {
+                    completion(achievements, nil, nil, nil)
+                }
             }
         }
     }
