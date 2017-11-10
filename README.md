@@ -33,7 +33,7 @@ We are using the [SwiftyJSON](https://github.com/SwiftyJSON/SwiftyJSON) framewor
 
 ### SDWebImage
 
-We are using [SDWebImage](https://github.com/rs/SDWebImage) for the image caching purpose. Images may take a very long time to download from any url in few network conditions. So, it would be very convenient to store these images as in cache these so we don't have to download them every time we require them. So, this improves the performance and removes the blocking of main thread for image download.
+We are using [SDWebImage](https://github.com/rs/SDWebImage) for the image caching purpose. Images may take a very long time to download from any url in few network conditions. So, it would be very convenient to store these images as in cache these so we don't have to download them every time we require them. So, this improves the performance and removes the blocking of main thread for image download. But for this app though, we are using the provided image downloader support but not the caching.
 
 ### MBProgressHUD
 
