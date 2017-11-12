@@ -1,7 +1,7 @@
 # Uncomment the next line to define a global platform for your project
 # platform :ios, '9.0'
 
-target 'achivement' do
+target 'Achievement' do
   # Comment the next line if you're not using Swift and don't want to use dynamic frameworks
   use_frameworks!
   pod 'Alamofire', '~> 4.5'
@@ -9,14 +9,14 @@ target 'achivement' do
   pod 'MBProgressHUD'
   pod 'SDWebImage'
 
-  # Pods for achivement
+  # Pods for Achievement
 
-  target 'achivementTests' do
+  target 'AchievementTests' do
     inherit! :search_paths
     # Pods for testing
   end
 
-  target 'achivementUITests' do
+  target 'AchievementUITests' do
     inherit! :search_paths
     # Pods for testing
   end

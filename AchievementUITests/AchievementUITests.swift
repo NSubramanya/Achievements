@@ -70,4 +70,3 @@ class achivementUITests: XCTestCase {
     }
     
 }
-
